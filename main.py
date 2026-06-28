@@ -24,9 +24,7 @@ class RadarRequest(BaseModel):
 
 @app.post("/scan")
 def get_radar_scan(req: RadarRequest):
-    # Fetch real terrain from Open-Elevation API
-    grid_size = 30
-    # Create a 30x30 grid centered on input lat/lon
+    grid_size = 100 # Increased for high-res overlay
     lats = np.linspace(req.lat - 0.2, req.lat + 0.2, grid_size)
     lons = np.linspace(req.lon - 0.2, req.lon + 0.2, grid_size)
     locations = [{"latitude": lat, "longitude": lon} for lat in lats for lon in lons]
@@ -38,7 +36,6 @@ def get_radar_scan(req: RadarRequest):
     except:
         elevations = np.zeros((grid_size, grid_size))
 
-    # Basic Radar Visibility Physics
     radar_height = elevations[grid_size//2, grid_size//2] + 100 
     visibility = np.where(elevations > radar_height, 0, 1)
     
