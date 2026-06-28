@@ -2,36 +2,40 @@
 <html>
 <head>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <style>
-        body { margin:0; }
-        #map { height: 100vh; width: 100vw; }
-        #radarCanvas { position: absolute; top:0; left:0; pointer-events: none; z-index: 1000; }
-    </style>
 </head>
 <body>
+    <div id="controls">
+        <h3>Radar Terrain Scan</h3>
+        <input type="text" id="lat" placeholder="Latitude (e.g. 28.6)">
+        <input type="text" id="lon" placeholder="Longitude (e.g. 77.2)">
+        <button onclick="fetchRadar()">Scan Terrain</button>
+    </div>
     <div id="map"></div>
     <canvas id="radarCanvas"></canvas>
     <script>
-        const map = L.map('map').setView([28.6139, 77.2090], 7);
+        const map = L.map('map').setView([28.6, 77.2], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         const canvas = document.getElementById('radarCanvas');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
         async function fetchRadar() {
-            const response = await fetch('/scan', { // Relative path works on Render
+            const lat = document.getElementById('lat').value || 28.6;
+            const lon = document.getElementById('lon').value || 77.2;
+            const res = await fetch('/scan', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({lat: 28.6, lon: 77.2, radius: 400})
+                body: JSON.stringify({lat: parseFloat(lat), lon: parseFloat(lon), radius: 100})
             });
-            const data = await response.json();
+            const data = await res.json();
             const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
             data.mask.forEach((row, y) => row.forEach((val, x) => {
-                if(val) ctx.fillRect(x*5, y*5, 4, 4);
+                if(val) ctx.fillRect(x * (canvas.width/30), y * (canvas.height/30), 20, 20);
             }));
         }
-        fetchRadar();
     </script>
 </body>
 </html>
