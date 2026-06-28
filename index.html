@@ -2,24 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Terrain Scan</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
+
     <div id="controls">
         <h3>Radar Terrain Scan</h3>
-        <input type="number" step="0.0001" id="lat" placeholder="Latitude">
-        <select id="latDir"><option value="1">N</option><option value="-1">S</option></select>
-        <input type="number" step="0.0001" id="lon" placeholder="Longitude">
-        <select id="lonDir"><option value="1">E</option><option value="-1">W</option></select>
+        <input type="number" step="0.0001" id="lat" placeholder="Latitude (e.g. 28.6139)">
+        <select id="latDir">
+            <option value="1">North (N)</option>
+            <option value="-1">South (S)</option>
+        </select>
+        
+        <input type="number" step="0.0001" id="lon" placeholder="Longitude (e.g. 77.2090)">
+        <select id="lonDir">
+            <option value="1">East (E)</option>
+            <option value="-1">West (W)</option>
+        </select>
+        
         <button onclick="fetchRadar()">Scan Terrain</button>
     </div>
+
     <div id="map"></div>
 
     <script>
+        // Initialize map at Delhi
         const map = L.map('map').setView([28.6139, 77.2090], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
         let radarLayer = null;
 
         async function fetchRadar() {
@@ -33,15 +47,33 @@
             });
             const data = await res.json();
             
+            // Remove previous scan
             if (radarLayer) map.removeLayer(radarLayer);
             
+            // Create canvas for drawing the radar circle and visibility mask
             const canvas = document.createElement('canvas');
-            canvas.width = 100; canvas.height = 100;
+            canvas.width = 100; 
+            canvas.height = 100;
             const ctx = canvas.getContext('2d');
-            data.mask.forEach((row, y) => row.forEach((val, x) => {
-                if(val) { ctx.fillStyle = 'rgba(0, 255, 0, 0.4)'; ctx.fillRect(x, y, 1, 1); }
-            }));
             
+            const centerX = 50; 
+            const centerY = 50;
+            const radius = 45;
+
+            // Render terrain visibility mask within the circular radar range
+            data.mask.forEach((row, y) => {
+                row.forEach((val, x) => {
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    // Only draw if within radius AND terrain is visible
+                    if (val === 1 && (dx*dx + dy*dy <= radius*radius)) {
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                });
+            });
+            
+            // Anchor to map geography
             radarLayer = L.imageOverlay(canvas.toDataURL(), [[lat-0.2, lon-0.2], [lat+0.2, lon+0.2]]).addTo(map);
         }
     </script>
