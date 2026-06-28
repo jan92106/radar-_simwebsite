@@ -1,41 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-</head>
-<body>
-    <div id="controls">
-        <h3>Radar Terrain Scan</h3>
-        <input type="text" id="lat" placeholder="Latitude (e.g. 28.6)">
-        <input type="text" id="lon" placeholder="Longitude (e.g. 77.2)">
-        <button onclick="fetchRadar()">Scan Terrain</button>
-    </div>
-    <div id="map"></div>
-    <canvas id="radarCanvas"></canvas>
-    <script>
-        const map = L.map('map').setView([28.6, 77.2], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        const canvas = document.getElementById('radarCanvas');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+<div id="controls">
+    <h3>Radar Terrain Scan</h3>
+    
+    <input type="number" step="0.0001" id="lat" placeholder="Latitude (e.g. 28.6139)">
+    <select id="latDir">
+        <option value="1">North (N)</option>
+        <option value="-1">South (S)</option>
+    </select>
 
-        async function fetchRadar() {
-            const lat = document.getElementById('lat').value || 28.6;
-            const lon = document.getElementById('lon').value || 77.2;
-            const res = await fetch('/scan', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({lat: parseFloat(lat), lon: parseFloat(lon), radius: 100})
-            });
-            const data = await res.json();
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
-            data.mask.forEach((row, y) => row.forEach((val, x) => {
-                if(val) ctx.fillRect(x * (canvas.width/30), y * (canvas.height/30), 20, 20);
-            }));
-        }
-    </script>
-</body>
-</html>
+    <input type="number" step="0.0001" id="lon" placeholder="Longitude (e.g. 77.2090)">
+    <select id="lonDir">
+        <option value="1">East (E)</option>
+        <option value="-1">West (W)</option>
+    </select>
+
+    <button onclick="fetchRadar()">Scan Terrain</button>
+</div>
+
+<script>
+    async function fetchRadar() {
+        // Grab numbers and multiply by direction
+        const lat = parseFloat(document.getElementById('lat').value) * parseFloat(document.getElementById('latDir').value);
+        const lon = parseFloat(document.getElementById('lon').value) * parseFloat(document.getElementById('lonDir').value);
+        
+        const res = await fetch('/scan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({lat: lat, lon: lon, radius: 100})
+        });
+        // ... rest of your fetch logic
+    }
+</script>
